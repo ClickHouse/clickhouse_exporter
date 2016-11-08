@@ -46,8 +46,8 @@ func TestClickhouseStatus(t *testing.T) {
 		defer close(ch)
 		e.Collect(ch)
 	}()
-	// because asks 2 tables
-	for i := 1; i <= 2*metricCount; i++ {
+	// because asks 3 tables
+	for i := 1; i <= 3*metricCount; i++ {
 		m := <-ch
 		if m == nil {
 			t.Error("expected metric but got nil")

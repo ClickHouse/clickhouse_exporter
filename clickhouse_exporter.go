@@ -30,10 +30,11 @@ var (
 // Exporter collects clickhouse stats from the given URI and exports them using
 // the prometheus metrics package.
 type Exporter struct {
-	metricsURI string
-	eventsURI  string
-	mutex      sync.RWMutex
-	client     *http.Client
+	metricsURI      string
+	asyncMetricsURI string
+	eventsURI       string
+	mutex           sync.RWMutex
+	client          *http.Client
 
 	scrapeFailures prometheus.Counter
 
@@ -44,8 +45,9 @@ type Exporter struct {
 // NewExporter returns an initialized Exporter.
 func NewExporter(uri string) *Exporter {
 	return &Exporter{
-		metricsURI: uri + "?query=" + url.QueryEscape("select * from system.metrics"),
-		eventsURI:  uri + "?query=" + url.QueryEscape("select * from system.events"),
+		metricsURI:      uri + "?query=" + url.QueryEscape("select * from system.metrics"),
+		asyncMetricsURI: uri + "?query=" + url.QueryEscape("select * from system.asynchronous_metrics"),
+		eventsURI:       uri + "?query=" + url.QueryEscape("select * from system.events"),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -93,12 +95,26 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	for _, m := range metrics {
 		newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      toSnake(m.key),
+			Name:      metricName(m.key),
 			Help:      "Number of " + m.key + " currently processed",
 		}, []string{}).WithLabelValues()
 		newMetric.Set(float64(m.value))
 		newMetric.Collect(ch)
-		//e.gauges = append(e.gauges, newMetric)
+	}
+
+	asyncMetrics, err := e.parseResponse(e.asyncMetricsURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.asyncMetricsURI, err)
+	}
+
+	for _, am := range asyncMetrics {
+		newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      metricName(am.key),
+			Help:      "Number of " + am.key + " async processed",
+		}, []string{}).WithLabelValues()
+		newMetric.Set(float64(am.value))
+		newMetric.Collect(ch)
 	}
 
 	events, err := e.parseResponse(e.eventsURI)
@@ -107,14 +123,12 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	}
 
 	for _, ev := range events {
-		newMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      toSnake(ev.key) + "_total",
-			Help:      "Number of " + ev.key + " total processed",
-		}, []string{}).WithLabelValues()
-		newMetric.Set(float64(ev.value))
-		newMetric.Collect(ch)
-		//e.counters = append(e.counters, newMetric)
+		newMetric, _ := prometheus.NewConstMetric(
+			prometheus.NewDesc(
+				metricName(ev.key)+"_total",
+				"Number of "+ev.key+" total processed", []string{}, nil),
+			prometheus.CounterValue, float64(ev.value))
+		ch <- newMetric
 	}
 	return nil
 }
@@ -190,6 +204,11 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	return
+}
+
+func metricName(in string) string {
+	out := toSnake(in)
+	return strings.Replace(out, ".", "_", -1)
 }
 
 // toSnake convert the given string to snake case following the Golang format:

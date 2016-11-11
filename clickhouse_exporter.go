@@ -125,7 +125,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	for _, ev := range events {
 		newMetric, _ := prometheus.NewConstMetric(
 			prometheus.NewDesc(
-				namespace + "_" + metricName(ev.key) + "_total",
+				namespace+"_"+metricName(ev.key)+"_total",
 				"Number of "+ev.key+" total processed", []string{}, nil),
 			prometheus.CounterValue, float64(ev.value))
 		ch <- newMetric

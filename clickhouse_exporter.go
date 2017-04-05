@@ -11,9 +11,10 @@ import (
 	"strings"
 	"sync"
 
+	"unicode"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
-	"unicode"
 )
 
 const (
@@ -43,11 +44,24 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri string) *Exporter {
+func NewExporter(uri url.URL) *Exporter {
+	q := uri.Query()
+	metricsURI := uri
+	q.Set("query", "select * from system.metrics")
+	metricsURI.RawQuery = q.Encode()
+
+	asyncMetricsURI := uri
+	q.Set("query", "select * from system.asynchronous_metrics")
+	asyncMetricsURI.RawQuery = q.Encode()
+
+	eventsURI := uri
+	q.Set("query", "select * from system.asynchronous_metrics")
+	eventsURI.RawQuery = q.Encode()
+
 	return &Exporter{
-		metricsURI:      uri + "?query=" + url.QueryEscape("select * from system.metrics"),
-		asyncMetricsURI: uri + "?query=" + url.QueryEscape("select * from system.asynchronous_metrics"),
-		eventsURI:       uri + "?query=" + url.QueryEscape("select * from system.events"),
+		metricsURI:      metricsURI.String(),
+		asyncMetricsURI: asyncMetricsURI.String(),
+		eventsURI:       eventsURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -233,7 +247,11 @@ func toSnake(in string) string {
 func main() {
 	flag.Parse()
 
-	exporter := NewExporter(*clickhouseScrapeURI)
+	uri, err := url.Parse(*clickhouseScrapeURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+	exporter := NewExporter(*uri)
 	prometheus.MustRegister(exporter)
 
 	log.Printf("Starting Server: %s", *listeningAddress)

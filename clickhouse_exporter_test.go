@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,7 +40,8 @@ func TestClickhouseStatus(t *testing.T) {
 	})
 	server := httptest.NewServer(handler)
 
-	e := NewExporter(server.URL)
+	url, _ := url.Parse(server.URL)
+	e := NewExporter(*url)
 	ch := make(chan prometheus.Metric)
 
 	go func() {

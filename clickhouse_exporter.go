@@ -55,7 +55,7 @@ func NewExporter(uri url.URL) *Exporter {
 	asyncMetricsURI.RawQuery = q.Encode()
 
 	eventsURI := uri
-	q.Set("query", "select * from system.asynchronous_metrics")
+	q.Set("query", "select * from system.events")
 	eventsURI.RawQuery = q.Encode()
 
 	return &Exporter{

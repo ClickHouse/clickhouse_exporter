@@ -60,7 +60,7 @@ func NewExporter(uri url.URL) *Exporter {
 	eventsURI.RawQuery = q.Encode()
 
 	partsURI := uri
-	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts from system.parts group by database, table")
+	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
 
 	return &Exporter{
@@ -158,7 +158,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	for _, part := range parts {
 		newBytesMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "clickhouse_table_parts_bytes",
+			Name:      "table_parts_bytes",
 			Help:      "Table size in bytes",
 		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
 		newBytesMetric.Set(float64(part.bytes))
@@ -166,7 +166,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 
 		newCountMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "clickhouse_table_parts_count",
+			Name:      "table_parts_count",
 			Help:      "Number of parts of the table",
 		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
 		newCountMetric.Set(float64(part.parts))

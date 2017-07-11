@@ -48,7 +48,7 @@ ifeq ($(GOOS),darwin)
 	RELEASE_SUFFIX ?= -osx$(shell sw_vers -productVersion)
 endif
 
-GO_VERSION ?= 1.7.1
+GO_VERSION ?= 1.8.3
 GOURL      ?= https://golang.org/dl
 GOPKG      ?= go$(GO_VERSION).$(GOOS)-$(GOARCH)$(RELEASE_SUFFIX).tar.gz
 GOPATH     := $(CURDIR)/.build/gopath
@@ -84,6 +84,7 @@ $(GOCC):
 	@echo
 	@sleep 5
 	mkdir -p $(GOROOT)
+	apk --no-cache add openssl curl
 	curl -L $(GOURL)/$(GOPKG) | tar -C $(GOROOT) --strip 1 -xz
 
 $(SELFLINK):

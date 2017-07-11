@@ -34,6 +34,7 @@ type Exporter struct {
 	metricsURI      string
 	asyncMetricsURI string
 	eventsURI       string
+	partsURI        string
 	mutex           sync.RWMutex
 	client          *http.Client
 
@@ -58,10 +59,15 @@ func NewExporter(uri url.URL) *Exporter {
 	q.Set("query", "select * from system.events")
 	eventsURI.RawQuery = q.Encode()
 
+	partsURI := uri
+	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts from system.parts where active = 1 group by database, table")
+	partsURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
+		partsURI:        partsURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -100,8 +106,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
-
-	metrics, err := e.parseResponse(e.metricsURI)
+	metrics, err := e.parseKeyValueResponse(e.metricsURI)
 	if err != nil {
 		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.metricsURI, err)
 	}
@@ -116,7 +121,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newMetric.Collect(ch)
 	}
 
-	asyncMetrics, err := e.parseResponse(e.asyncMetricsURI)
+	asyncMetrics, err := e.parseKeyValueResponse(e.asyncMetricsURI)
 	if err != nil {
 		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.asyncMetricsURI, err)
 	}
@@ -131,7 +136,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newMetric.Collect(ch)
 	}
 
-	events, err := e.parseResponse(e.eventsURI)
+	events, err := e.parseKeyValueResponse(e.eventsURI)
 	if err != nil {
 		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.eventsURI, err)
 	}
@@ -144,15 +149,34 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			prometheus.CounterValue, float64(ev.value))
 		ch <- newMetric
 	}
+
+	parts, err := e.parsePartsResponse(e.partsURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.partsURI, err)
+	}
+
+	for _, part := range parts {
+		newBytesMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_parts_bytes",
+			Help:      "Table size in bytes",
+		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
+		newBytesMetric.Set(float64(part.bytes))
+		newBytesMetric.Collect(ch)
+
+		newCountMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_parts_count",
+			Help:      "Number of parts of the table",
+		}, []string{"database", "table"}).WithLabelValues(part.database, part.table)
+		newCountMetric.Set(float64(part.parts))
+		newCountMetric.Collect(ch)
+	}
+
 	return nil
 }
 
-type lineResult struct {
-	key   string
-	value int
-}
-
-func (e *Exporter) parseResponse(uri string) ([]lineResult, error) {
+func (e *Exporter) response(uri string) ([]byte, error) {
 	resp, err := e.client.Get(uri)
 	if err != nil {
 		return nil, fmt.Errorf("Error scraping clickhouse: %v", err)
@@ -165,6 +189,20 @@ func (e *Exporter) parseResponse(uri string) ([]lineResult, error) {
 			data = []byte(err.Error())
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
+	}
+
+	return data, nil
+}
+
+type lineResult struct {
+	key   string
+	value int
+}
+
+func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
+	data, err := e.response(uri)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parsing results
@@ -187,6 +225,50 @@ func (e *Exporter) parseResponse(uri string) ([]lineResult, error) {
 		results = append(results, lineResult{k, v})
 
 	}
+	return results, nil
+}
+
+type partsResult struct {
+	database string
+	table    string
+	bytes    int
+	parts    int
+}
+
+func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
+	data, err := e.response(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parsing results
+	lines := strings.Split(string(data), "\n")
+	var results []partsResult = make([]partsResult, 0)
+
+	for i, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) != 4 {
+			return nil, fmt.Errorf("Unexpected %d line: %s", i, line)
+		}
+		database := strings.TrimSpace(parts[0])
+		table := strings.TrimSpace(parts[1])
+
+		bytes, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nil, err
+		}
+
+		count, err := strconv.Atoi(strings.TrimSpace(parts[3]))
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, partsResult{database, table, bytes, count})
+	}
+
 	return results, nil
 }
 

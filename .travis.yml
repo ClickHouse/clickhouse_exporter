@@ -1,0 +1,22 @@
+dist: trusty
+sudo: required
+language: go
+
+go:
+  - 1.8.x
+  - master
+
+services:
+  - docker
+
+before_script:
+  - docker --version
+  - docker-compose --version
+  - docker-compose -f docker-compose.yml up -d
+
+script:
+  - make init
+  - make cover
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -X fix

@@ -52,6 +52,7 @@ GO_VERSION ?= 1.8.3
 GOURL      ?= https://golang.org/dl
 GOPKG      ?= go$(GO_VERSION).$(GOOS)-$(GOARCH)$(RELEASE_SUFFIX).tar.gz
 GOPATH     := $(CURDIR)/.build/gopath
+PACKAGES   := $(shell go list ./... | grep -v vendor)
 
 # Check for the correct version of go in the path. If we find it, use it.
 # Otherwise, prepare to build go locally.
@@ -120,3 +121,9 @@ format: $(GOCC)
 .PHONY: clean
 clean:
 	rm -rf $(BINARY) $(ARCHIVE) .build *-stamp
+
+init:
+	go get -u github.com/AlekSi/gocoverutil
+
+cover: install
+	gocoverutil test -v $(PACKAGES)

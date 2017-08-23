@@ -125,5 +125,8 @@ clean:
 init:
 	go get -u github.com/AlekSi/gocoverutil
 
+install:
+	go install -v $(PACKAGES)
+
 cover: install
 	gocoverutil test -v $(PACKAGES)

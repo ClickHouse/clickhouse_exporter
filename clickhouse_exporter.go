@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
 	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -223,7 +222,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 			continue
 		}
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("Unexpected %d line: %s", i, line)
+			return nil, fmt.Errorf("parseKeyValueResponse: unexpected %d line: %s", i, line)
 		}
 		k := strings.TrimSpace(parts[0])
 		v, err := strconv.Atoi(strings.TrimSpace(parts[1]))
@@ -259,8 +258,8 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 		if len(parts) == 0 {
 			continue
 		}
-		if len(parts) != 4 {
-			return nil, fmt.Errorf("Unexpected %d line: %s", i, line)
+		if len(parts) != 5 {
+			return nil, fmt.Errorf("parsePartsResponse: unexpected %d line: %s", i, line)
 		}
 		database := strings.TrimSpace(parts[0])
 		table := strings.TrimSpace(parts[1])

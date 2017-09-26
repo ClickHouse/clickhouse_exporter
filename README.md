@@ -14,6 +14,14 @@ Help on flags:
 ./clickhouse_exporter --help
 ```
 
+Credentials(if not default):
+
+via environment variables 
+```
+CLICKHOUSE_USER
+CLICKHOUSE_PASSWORD
+```
+ 
 ## Using Docker
 
 ```

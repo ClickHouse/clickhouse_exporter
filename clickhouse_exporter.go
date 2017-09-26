@@ -14,6 +14,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
+	"os"
 )
 
 const (
@@ -21,10 +22,11 @@ const (
 )
 
 var (
-	listeningAddress    = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
-	metricsEndpoint     = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
-	clickhouseScrapeURI = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
-	insecure            = flag.Bool("insecure", true, "Ignore server certificate if using https")
+	listeningAddress                   = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
+	metricsEndpoint                    = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
+	clickhouseScrapeURI                = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
+	insecure                           = flag.Bool("insecure", true, "Ignore server certificate if using https")
+	credentialsPresent, user, password = getCredentials()
 )
 
 // Exporter collects clickhouse stats from the given URI and exports them using
@@ -183,8 +185,22 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	return nil
 }
 
-func (e *Exporter) response(uri string) ([]byte, error) {
-	resp, err := e.client.Get(uri)
+func getCredentials() (bool, string, string) {
+	user, userPresent := os.LookupEnv("CLICKHOUSE_USER")
+	password, passwordPresent := os.LookupEnv("CLICKHOUSE_PASSWORD")
+	return userPresent && passwordPresent, user, password
+}
+
+func (e *Exporter) handleResponse(uri string) ([]byte, error) {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, err
+	}
+	if credentialsPresent {
+		req.Header.Set("X-ClickHouse-User", user)
+		req.Header.Set("X-ClickHouse-Key", password)
+	}
+	resp, err := e.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Error scraping clickhouse: %v", err)
 	}
@@ -207,7 +223,7 @@ type lineResult struct {
 }
 
 func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
-	data, err := e.response(uri)
+	data, err := e.handleResponse(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +260,7 @@ type partsResult struct {
 }
 
 func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
-	data, err := e.response(uri)
+	data, err := e.handleResponse(uri)
 	if err != nil {
 		return nil, err
 	}

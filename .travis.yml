@@ -13,7 +13,7 @@ before_script:
 
 script:
   - promu build
-  - gocoverutil test -v $PACKAGES
+#  - gocoverutil test -v $PACKAGES
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -X fix
+#  - bash <(curl -s https://codecov.io/bash) -X fix

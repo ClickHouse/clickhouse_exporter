@@ -6,17 +6,14 @@ go:
   - 1.8.x
   - master
 
-services:
-  - docker
-
 before_script:
-  - docker --version
-  - docker-compose --version
-  - docker-compose -f docker-compose.yml up -d
+  - PACKAGES=`go list ./... | grep -v vendor`
+  - go get github.com/prometheus/promu
+  - go get github.com/AlekSi/gocoverutil
 
 script:
-  - make init
-  - make cover
+  - promu build
+  - gocoverutil test -v $PACKAGES
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -X fix

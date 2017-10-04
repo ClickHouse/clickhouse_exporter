@@ -16,12 +16,12 @@ Help on flags:
 
 Credentials(if not default):
 
-via environment variables 
+via environment variables
 ```
 CLICKHOUSE_USER
 CLICKHOUSE_PASSWORD
 ```
- 
+
 ## Using Docker
 
 ```

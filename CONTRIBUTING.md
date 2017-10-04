@@ -2,9 +2,13 @@
 
 ## Local setup
 
-The easiest way to make a local development setup is to use Docker Compose: `make env-run` on Linux.
+The easiest way to make a local development setup is to use Docker Compose.
 
-You can run ClickHouse client with `make clickhouse-client`.
+```
+docker-compose up
+make init
+make
+```
 
 
 ## Vendoring

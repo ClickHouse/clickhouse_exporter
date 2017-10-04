@@ -1,5 +1,8 @@
 # Clickhouse Exporter for Prometheus
 
+[![Build Status](https://travis-ci.org/f1yegor/clickhouse_exporter.svg?branch=master)](https://travis-ci.org/f1yegor/clickhouse_exporter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/f1yegor/clickhouse_exporter)](https://goreportcard.com/report/github.com/f1yegor/clickhouse_exporter)
+
 This is a simple server that periodically scrapes ClickHouse(https://clickhouse.yandex/) stats and exports them via HTTP for Prometheus(https://prometheus.io/)
 consumption.
 

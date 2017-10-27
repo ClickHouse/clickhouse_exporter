@@ -1,28 +1,9 @@
 ---
 version: '3'
 services:
-  prometheus:
-    image: prom/prometheus:v2.0.0-beta.2
-    ports:
-      - 127.0.0.1:9090:9090
-    network_mode: host
-    volumes:
-      - ./docker/prometheus:/etc/prometheus
-
   clickhouse:
     image: yandex/clickhouse-server
     ports:
       - 127.0.0.1:8123:8123
       - 127.0.0.1:9000:9000
       - 127.0.0.1:9009:9009
-    network_mode: host
-    # volumes:
-    #   - ./config.xml:/etc/clickhouse-server/config.xml
-    #   - ./users.xml:/etc/clickhouse-server/users.xml
-
-  clickhouse_exporter:
-    image: f1yegor/clickhouse-exporter
-    ports:
-      - 127.0.0.1:9116:9116
-    network_mode: host
-    command: -scrape_uri=http://127.0.0.1:8123/

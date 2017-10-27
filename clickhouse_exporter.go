@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
-	"os"
 )
 
 const (
@@ -353,7 +353,8 @@ func toSnake(in string) string {
 	return string(out)
 }
 
-//var _ Exporter = (*prometheus.Collector)(nil)
+// check interface
+var _ prometheus.Collector = (*Exporter)(nil)
 
 func main() {
 	flag.Parse()

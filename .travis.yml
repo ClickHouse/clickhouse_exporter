@@ -4,16 +4,23 @@ language: go
 
 go:
   - 1.8.x
+  - 1.9.x
   - master
 
+go_import_path: github.com/f1yegor/clickhouse_exporter
+
+services:
+  - docker
+
 before_script:
-  - PACKAGES=`go list ./... | grep -v vendor`
-  - go get github.com/prometheus/promu
-  - go get github.com/AlekSi/gocoverutil
+  - docker --version
+  - docker-compose --version
+  - docker-compose up -d
+
+  - make init
 
 script:
-  - promu build
-#  - gocoverutil test -v $PACKAGES
+  - make
 
 after_success:
-#  - bash <(curl -s https://codecov.io/bash) -X fix
+  - bash <(curl -s https://codecov.io/bash) -X fix

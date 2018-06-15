@@ -34,13 +34,12 @@ type Exporter struct {
 	gauges   []*prometheus.GaugeVec
 	counters []*prometheus.CounterVec
 
-	credentialsPresent bool
-	user               string
-	password           string
+	user     string
+	password string
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri url.URL, insecure, credentialsPresent bool, user, password string) *Exporter {
+func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	q := uri.Query()
 	metricsURI := uri
 	q.Set("query", "select * from system.metrics")
@@ -75,9 +74,8 @@ func NewExporter(uri url.URL, insecure, credentialsPresent bool, user, password 
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 			},
 		},
-		credentialsPresent: credentialsPresent,
-		user:               user,
-		password:           password,
+		user:     user,
+		password: password,
 	}
 }
 
@@ -187,7 +185,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e.credentialsPresent {
+	if e.user != "" && e.password != "" {
 		req.Header.Set("X-ClickHouse-User", e.user)
 		req.Header.Set("X-ClickHouse-Key", e.password)
 	}

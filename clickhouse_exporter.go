@@ -11,18 +11,13 @@ import (
 	"github.com/prometheus/log"
 )
 
-func getCredentials() (bool, string, string) {
-	user, userPresent := os.LookupEnv("CLICKHOUSE_USER")
-	password, passwordPresent := os.LookupEnv("CLICKHOUSE_PASSWORD")
-	return userPresent && passwordPresent, user, password
-}
-
 var (
-	listeningAddress                   = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
-	metricsEndpoint                    = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
-	clickhouseScrapeURI                = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
-	insecure                           = flag.Bool("insecure", true, "Ignore server certificate if using https")
-	credentialsPresent, user, password = getCredentials()
+	listeningAddress    = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
+	metricsEndpoint     = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
+	clickhouseScrapeURI = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
+	insecure            = flag.Bool("insecure", true, "Ignore server certificate if using https")
+	user                = os.Getenv("CLICKHOUSE_USER")
+	password            = os.Getenv("CLICKHOUSE_PASSWORD")
 )
 
 func main() {
@@ -32,7 +27,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	e := exporter.NewExporter(*uri, *insecure, credentialsPresent, user, password)
+	e := exporter.NewExporter(*uri, *insecure, user, password)
 	prometheus.MustRegister(e)
 
 	log.Printf("Starting Server: %s", *listeningAddress)

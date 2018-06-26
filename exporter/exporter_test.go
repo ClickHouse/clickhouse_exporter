@@ -8,11 +8,11 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	url, err := url.Parse("http://127.0.0.1:8123/")
+	clickhouseUrl, err := url.Parse("http://127.0.0.1:8123/")
 	if err != nil {
 		t.Fatal(err)
 	}
-	exporter := NewExporter(*url)
+	exporter := NewExporter(*clickhouseUrl, false, "", "")
 
 	t.Run("Describe", func(t *testing.T) {
 		ch := make(chan *prometheus.Desc)
@@ -30,6 +30,9 @@ func TestScrape(t *testing.T) {
 		var err error
 		go func() {
 			err = exporter.collect(ch)
+			if err != nil {
+				panic("failed")
+			}
 			close(ch)
 		}()
 

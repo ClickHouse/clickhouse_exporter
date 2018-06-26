@@ -9,6 +9,7 @@ import (
 	"github.com/f1yegor/clickhouse_exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -31,7 +32,7 @@ func main() {
 	prometheus.MustRegister(e)
 
 	log.Printf("Starting Server: %s", *listeningAddress)
-	http.Handle(*metricsEndpoint, prometheus.Handler())
+	http.Handle(*metricsEndpoint, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 			<head><title>Clickhouse Exporter</title></head>

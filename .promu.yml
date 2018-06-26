@@ -1,6 +1,6 @@
 verbose: false
 go:
-    version: 1.8.3
+    version: 1.10.3
     cgo: false
 repository:
     path: github.com/f1yegor/clickhouse_exporter

@@ -50,7 +50,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	asyncMetricsURI.RawQuery = q.Encode()
 
 	eventsURI := uri
-	q.Set("query", "select metric, value from system.events")
+	q.Set("query", "select event, value from system.events")
 	eventsURI.RawQuery = q.Encode()
 
 	partsURI := uri

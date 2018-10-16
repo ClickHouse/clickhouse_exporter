@@ -42,7 +42,7 @@ type Exporter struct {
 func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	q := uri.Query()
 	metricsURI := uri
-	q.Set("query", "select * from system.metrics")
+	q.Set("query", "select metric, value from system.metrics")
 	metricsURI.RawQuery = q.Encode()
 
 	asyncMetricsURI := uri
@@ -50,13 +50,13 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	asyncMetricsURI.RawQuery = q.Encode()
 
 	eventsURI := uri
-	q.Set("query", "select * from system.events")
+	q.Set("query", "select event, value from system.events")
 	eventsURI.RawQuery = q.Encode()
 
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-
+	
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),

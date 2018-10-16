@@ -202,8 +202,23 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-
+	
+	if strings.Contains(uri, "system.metrics") || strings.Contains(uri, "system.events") {
+		data = DataFix(data)
+	}
 	return data, nil
+}
+
+func DataFix(data []byte) []byte {
+	datastr := string(data)
+	var fixedData string
+	for _, line := range strings.Split(datastr, "\n") {
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			fixedData = fixedData + fmt.Sprintf("%v %v\n", parts[0], parts[1])
+		}
+	}
+	return []byte(fixedData)
 }
 
 type lineResult struct {

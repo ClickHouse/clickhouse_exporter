@@ -1,14 +1,14 @@
 FROM golang:1.11 AS BUILD
 
-MAINTAINER  Roman Tkalenko
+LABEL maintainer="Roman Tkalenko"
 
-ADD . /go/src/github.com/f1yegor/clickhouse_exporter
+COPY . /go/src/github.com/f1yegor/clickhouse_exporter
 
 WORKDIR /go/src/github.com/f1yegor/clickhouse_exporter
 
 RUN make init && make
 
-FROM frolvlad/alpine-glibc
+FROM frolvlad/alpine-glibc:alpine-3.8
 
 COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
 

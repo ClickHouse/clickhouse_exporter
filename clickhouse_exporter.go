@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/f1yegor/clickhouse_exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,6 +16,8 @@ import (
 var (
 	listeningAddress    = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
 	metricsEndpoint     = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
+	readTimeoutSeconds  = flag.Int("telemetry.read_timeout_seconds", 5, "Maximum duration before timing out read of the request, and closing idle connections.")
+	writeTimeoutSeconds = flag.Int("telemetry.write_timeout_seconds", 10, "Maximum duration before timing out write of the response.")
 	clickhouseScrapeURI = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
 	insecure            = flag.Bool("insecure", true, "Ignore server certificate if using https")
 	user                = os.Getenv("CLICKHOUSE_USER")
@@ -43,5 +46,12 @@ func main() {
 			</html>`))
 	})
 
-	log.Fatal(http.ListenAndServe(*listeningAddress, nil))
+	srv := &http.Server{
+		Addr:         *listeningAddress,
+		Handler:      http.DefaultServeMux,
+		ReadTimeout:  time.Duration(*readTimeoutSeconds) * time.Second,
+		WriteTimeout: time.Duration(*writeTimeoutSeconds) * time.Second,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }

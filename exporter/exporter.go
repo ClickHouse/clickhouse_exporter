@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -73,6 +74,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 			},
+			Timeout: 30 * time.Second,
 		},
 		user:     user,
 		password: password,

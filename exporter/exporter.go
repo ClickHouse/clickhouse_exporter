@@ -102,6 +102,25 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
+
+    // clickhouse_up (bool) metric, which is always present
+    upMetricKey := "up"
+    var upMetricValue float64
+    response, err := e.client.Get(e.metricsURI)
+    if err != nil || response.StatusCode != 200 {
+        upMetricValue = 0
+    } else {
+        upMetricValue = 1
+    }
+    upMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+        Namespace: namespace,
+        Name:      metricName(upMetricKey),
+        Help:      "Bool metric that shows service up or down (http responce 200 and no errors)",
+    }, []string{}).WithLabelValues()
+    upMetric.Set(float64(upMetricValue))
+    upMetric.Collect(ch)
+    // end clickhouse_up
+
 	metrics, err := e.parseKeyValueResponse(e.metricsURI)
 	if err != nil {
 		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.metricsURI, err)

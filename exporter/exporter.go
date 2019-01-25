@@ -107,6 +107,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
     upMetricKey := "up"
     var upMetricValue float64
     response, err := e.client.Get(e.metricsURI)
+    defer response.Body.Close()
     if err != nil || response.StatusCode != 200 {
         upMetricValue = 0
     } else {

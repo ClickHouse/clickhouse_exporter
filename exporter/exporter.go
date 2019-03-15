@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -27,13 +26,9 @@ type Exporter struct {
 	asyncMetricsURI string
 	eventsURI       string
 	partsURI        string
-	mutex           sync.RWMutex
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
-
-	gauges   []*prometheus.GaugeVec
-	counters []*prometheus.CounterVec
 
 	user     string
 	password string
@@ -68,8 +63,6 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 			Name:      "exporter_scrape_failures_total",
 			Help:      "Number of errors while scraping clickhouse.",
 		}),
-		gauges:   make([]*prometheus.GaugeVec, 0, 20),
-		counters: make([]*prometheus.CounterVec, 0, 20),
 		client: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
@@ -295,31 +288,11 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 // Collect fetches the stats from configured clickhouse location and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	e.mutex.Lock() // To protect metrics from concurrent collects.
-	defer e.mutex.Unlock()
 	if err := e.collect(ch); err != nil {
 		log.Printf("Error scraping clickhouse: %s", err)
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
 	}
-	// Reset metrics.
-	for _, vec := range e.gauges {
-		vec.Reset()
-	}
-
-	for _, vec := range e.counters {
-		vec.Reset()
-	}
-
-	for _, vec := range e.gauges {
-		vec.Collect(ch)
-	}
-
-	for _, vec := range e.counters {
-		vec.Collect(ch)
-	}
-
-	return
 }
 
 func metricName(in string) string {

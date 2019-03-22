@@ -1,11 +1,11 @@
-dist: trusty
+---
+dist: xenial
 sudo: required
 language: go
 
 go:
-  - 1.8.x
-  - 1.9.x
-  - master
+  - 1.11.6
+  - 1.12.1
 
 go_import_path: github.com/f1yegor/clickhouse_exporter
 

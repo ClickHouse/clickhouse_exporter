@@ -7,5 +7,7 @@ build:
 	go install -v
 
 test:
-	go test -v -race
-	gocoverutil -coverprofile=coverage.txt test -v
+	docker-compose up -d
+	go test -v -race ./...
+	gocoverutil -coverprofile=coverage.txt test -v ./...
+	docker-compose down

@@ -3,6 +3,12 @@ dist: xenial
 sudo: required
 language: go
 
+addons:
+  apt:
+    packages:
+      # needed for the nfpm pipe:
+      - rpm
+
 go:
   - 1.11.6
   - 1.12.1
@@ -24,3 +30,11 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -X fix
+
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/goreleaser | bash
+    on:
+      tags: true
+      condition: $TRAVIS_OS_NAME = linux

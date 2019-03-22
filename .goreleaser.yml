@@ -1,0 +1,19 @@
+---
+before:
+  hooks:
+    - make init
+
+archive:
+  format: binary
+
+nfpm:
+  homepage: https://github.com/f1yegor/clickhouse_exporter
+  description: >
+    Simple server that periodically scrapes ClickHouse stats
+    and exports them via HTTP for Prometheus consumption.
+
+  license: MIT
+
+  formats:
+    - deb
+    - rpm

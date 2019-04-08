@@ -1,6 +1,5 @@
 all: build test
 
-
 init:
 	go get -u github.com/prometheus/promu
 	go get -u github.com/AlekSi/gocoverutil

@@ -1,0 +1,4 @@
+
+[[constraint]]
+  name = "github.com/peterbourgon/ff"
+  version = "1.2.0"

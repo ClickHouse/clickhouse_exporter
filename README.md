@@ -12,17 +12,26 @@ To run it:
 ./clickhouse_exporter [flags]
 ```
 
-Help on flags:
+Flags are also configurable using environment variables. See the usage with:
+
 ```bash
 ./clickhouse_exporter --help
 ```
 
-Credentials(if not default):
-
-via environment variables
 ```
-CLICKHOUSE_USER
-CLICKHOUSE_PASSWORD
+Usage of clickhouse-exporter:
+  -insecure
+    	Ignore server certificate if using https. Override environment (CLICKHOUSE_INSECURE) (default true)
+  -password string
+    	Clickhouse password. Override environment (CLICKHOUSE_PASSWORD)
+  -scrape_uri string
+    	URI to clickhouse http endpoint. Override environment (CLICKHOUSE_SCRAPE_URI) (default "http://localhost:8123/")
+  -telemetry.address string
+    	Address on which to expose metrics. Override environment (CLICKHOUSE_TELEMETRY_ADDRESS) (default ":9116")
+  -telemetry.endpoint string
+    	Path under which to expose metrics. Override environment (CLICKHOUSE_TELEMETRY_ENDPOINT) (default "/metrics")
+  -user string
+    	Clickhouse user. Override environment (CLICKHOUSE_USER)
 ```
 
 ## Using Docker
@@ -30,5 +39,7 @@ CLICKHOUSE_PASSWORD
 ```
 docker run -d -p 9116:9116 f1yegor/clickhouse-exporter -scrape_uri=http://clickhouse.service.consul:8123/
 ```
+
 ## Sample dashboard
+
 Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882

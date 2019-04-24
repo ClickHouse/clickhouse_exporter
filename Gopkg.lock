@@ -2,68 +2,111 @@
 
 
 [[projects]]
+  digest = "1:b15e65d54f9b9020afe2609ba1082ba6770c429cbb4617c0dfdcad0e19496fa4"
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
+  pruneopts = ""
   revision = "7f976d3a76720c4c27af2ba716b85d2e0a7e38b1"
   version = "v1.0.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:0c5485088ce274fac2e931c1b979f2619345097b39d91af3239977114adf0320"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
+  pruneopts = ""
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
   branch = "master"
+  digest = "1:0556762750ea0b2441468ebb355f15e1139de0af71adf5472731ec07a23e62db"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
+  pruneopts = ""
   revision = "0a4f71a498b7c4812f64969510bcb4eca251e33a"
 
 [[projects]]
+  digest = "1:4c23ced97a470b17d9ffd788310502a077b9c1f60221a85563e49696276b4147"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
+  pruneopts = ""
   revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:1adf389cdedae3e38d664fc387aa63718f8ad8397e0cce8e2f3c7450833ab650"
+  name = "github.com/peterbourgon/ff"
+  packages = ["."]
+  pruneopts = ""
+  revision = "52d851567994fcca73bf3668fc3099cfa7be3768"
+  version = "v1.2.0"
+
+[[projects]]
+  digest = "1:4142d94383572e74b42352273652c62afec5b23f325222ed09198f46009022d1"
   name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
+  packages = [
+    "prometheus",
+    "prometheus/promhttp",
+  ]
+  pruneopts = ""
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:2c2e0c749aa376a90cd48f4b62b55763214f3bb16d2de7eef981062892f61619"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
+  pruneopts = ""
   revision = "6f3806018612930941127f2a7c6c453ba2c527d2"
 
 [[projects]]
   branch = "master"
+  digest = "1:bb155e0e83eb27465503e71a486a950a1b9de7de9413cf411927a3f05334c7b6"
   name = "github.com/prometheus/common"
-  packages = ["expfmt","internal/bitbucket.org/ww/goautoneg","model"]
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model",
+  ]
+  pruneopts = ""
   revision = "3e6a7635bac6573d43f49f97b47eb9bda195dba8"
 
 [[projects]]
   branch = "master"
+  digest = "1:52c2f5326f3f79596064c8fb73185d544143f7670d840a31b3a655b64bbc1217"
   name = "github.com/prometheus/log"
   packages = ["."]
+  pruneopts = ""
   revision = "9a3136781e1ff7bc42736ba4acb81339b1422551"
 
 [[projects]]
   branch = "master"
+  digest = "1:e5e51236fd16fb017b660ea5f473c5fc51ab3f5926285e645c4ad52bd78b12b3"
   name = "github.com/prometheus/procfs"
-  packages = [".","xfs"]
+  packages = [
+    ".",
+    "xfs",
+  ]
+  pruneopts = ""
   revision = "e645f4e5aaa8506fc71d6edbc5c4ff02c04c46f2"
 
 [[projects]]
   branch = "master"
+  digest = "1:b78daec10cf61db3be8d7121bdaf68f8b181aba5ac1c958f239fbbb5c75daa4f"
   name = "golang.org/x/sys"
   packages = ["unix"]
+  pruneopts = ""
   revision = "abf9c25f54453410d0c6668e519582a9e1115027"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "66a89abcc4db7160ad4b91ca6c16049a616004060b3c42d4a13a8d98f5838d90"
+  input-imports = [
+    "github.com/peterbourgon/ff",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/prometheus/log",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

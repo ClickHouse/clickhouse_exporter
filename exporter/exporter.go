@@ -26,6 +26,7 @@ type Exporter struct {
 	asyncMetricsURI string
 	eventsURI       string
 	partsURI        string
+	mutationsURI    string
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
@@ -52,12 +53,17 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
+	mutationsURI := uri
+	q.Set("query", "select database, table, count() as mutations, sum(parts_to_do) as parts_to_do from system.mutations where is_done = 0 group by database, table")
+	mutationsURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
 		partsURI:        partsURI.String(),
+		mutationsURI:    mutationsURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -172,6 +178,29 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newRowsMetric.Collect(ch)
 	}
 
+	mutations, err := e.parseMutationsResponse(e.mutationsURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.mutationsURI, err)
+	}
+
+	for _, mut := range mutations {
+		newCountMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_mutations_count",
+			Help:      "Number of mutations of the table",
+		}, []string{"database", "table"}).WithLabelValues(mut.database, mut.table)
+		newCountMetric.Set(float64(mut.mutations))
+		newCountMetric.Collect(ch)
+
+		newPartsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_mutations_parts",
+			Help:      "Number of pending mutation parts to do of the table",
+		}, []string{"database", "table"}).WithLabelValues(mut.database, mut.table)
+		newPartsMetric.Set(float64(mut.partsToDo))
+		newPartsMetric.Collect(ch)
+	}
+
 	return nil
 }
 
@@ -197,7 +226,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 
@@ -280,6 +309,50 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 		}
 
 		results = append(results, partsResult{database, table, bytes, count, rows})
+	}
+
+	return results, nil
+}
+
+type mutationsResult struct {
+	database  string
+	table     string
+	mutations int
+	partsToDo int
+}
+
+func (e *Exporter) parseMutationsResponse(uri string) ([]mutationsResult, error) {
+	data, err := e.handleResponse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parsing results
+	lines := strings.Split(string(data), "\n")
+	var results = make([]mutationsResult, 0)
+
+	for i, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) != 4 {
+			return nil, fmt.Errorf("parseMutationsResponse: unexpected %d line: %s", i, line)
+		}
+		database := strings.TrimSpace(parts[0])
+		table := strings.TrimSpace(parts[1])
+
+		mutations, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nil, err
+		}
+
+		partsToDo, err := strconv.Atoi(strings.TrimSpace(parts[3]))
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, mutationsResult{database, table, mutations, partsToDo})
 	}
 
 	return results, nil

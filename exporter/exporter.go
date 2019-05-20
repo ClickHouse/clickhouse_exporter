@@ -52,7 +52,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
@@ -197,7 +197,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 
@@ -221,7 +221,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 		if len(parts) == 0 {
 			continue
 		}
-		if len(parts) != 2 {
+		if len(parts) < 2 {
 			return nil, fmt.Errorf("parseKeyValueResponse: unexpected %d line: %s", i, line)
 		}
 		k := strings.TrimSpace(parts[0])

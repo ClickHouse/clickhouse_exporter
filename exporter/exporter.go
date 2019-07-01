@@ -52,7 +52,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
@@ -197,7 +197,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 
@@ -288,11 +288,25 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 // Collect fetches the stats from configured clickhouse location and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+	upValue := 1
+
 	if err := e.collect(ch); err != nil {
 		log.Printf("Error scraping clickhouse: %s", err)
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
+
+		upValue = 0
 	}
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "up"),
+			"Was the last query of ClickHouse successful.",
+			nil, nil,
+		),
+		prometheus.GaugeValue, float64(upValue),
+	)
+
 }
 
 func metricName(in string) string {

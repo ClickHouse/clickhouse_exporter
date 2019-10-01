@@ -26,6 +26,7 @@ type Exporter struct {
 	asyncMetricsURI string
 	eventsURI       string
 	partsURI        string
+	qlURI           string
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
@@ -52,12 +53,17 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
+	querylogURI := uri
+	q.Set("query", "select splitByString( ',',exception)[1] AS exceptiontype , count() from system.query_log where exception like '%Code%' group by exceptiontype")
+	querylogURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
 		partsURI:        partsURI.String(),
+		qlURI:           querylogURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -172,6 +178,21 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newRowsMetric.Collect(ch)
 	}
 
+	qllogs, err := e.parseKeyValueResponse(e.qlURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.qlURI, err)
+	}
+
+	for _, qllog := range qllogs {
+		newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      metricName(qllog.key),
+			Help:      "Number of " + qllog.key + " currently processed",
+		}, []string{}).WithLabelValues()
+		newMetric.Set(float64(qllog.value))
+		newMetric.Collect(ch)
+	}
+
 	return nil
 }
 
@@ -197,7 +218,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 
@@ -217,7 +238,8 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 	var results []lineResult = make([]lineResult, 0)
 
 	for i, line := range lines {
-		parts := strings.Fields(line)
+		sline := strings.Replace(line, " ", "", -1)
+		parts := strings.Fields(sline)
 		if len(parts) == 0 {
 			continue
 		}
@@ -319,3 +341,4 @@ func toSnake(in string) string {
 
 // check interface
 var _ prometheus.Collector = (*Exporter)(nil)
+

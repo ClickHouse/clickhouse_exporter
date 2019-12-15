@@ -1,4 +1,4 @@
-package exporter
+package exporter // import "github.com/Percona-Lab/clickhouse_exporter/exporter"
 
 import (
 	"crypto/tls"
@@ -52,7 +52,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
@@ -197,7 +197,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 

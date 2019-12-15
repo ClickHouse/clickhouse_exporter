@@ -1,4 +1,4 @@
-package main
+package main // import "github.com/Percona-Lab/clickhouse_exporter"
 
 import (
 	"flag"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/Percona-Lab/clickhouse_exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/log"
 )
 
 var (

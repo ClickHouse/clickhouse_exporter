@@ -1,16 +1,28 @@
-dist: trusty
-sudo: required
+dist: bionic
 language: go
 
+services:
+  - docker
+
 go:
-  - 1.8.x
-  - 1.9.x
+  - 1.13.x
   - master
 
 go_import_path: github.com/Percona-Lab/clickhouse_exporter
 
-services:
-  - docker
+matrix:
+  fast_finish: true
+  allow_failures:
+    - go: master
+
+cache:
+  directories:
+    - /home/travis/.cache/go-build
+    # - /home/travis/gopath/pkg
+
+before_cache:
+  - go clean -testcache
+  # - go clean -cache
 
 before_script:
   - docker --version

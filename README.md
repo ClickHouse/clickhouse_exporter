@@ -28,7 +28,7 @@ CLICKHOUSE_PASSWORD
 ## Using Docker
 
 ```
-docker run -d -p 9116:9116 f1yegor/clickhouse-exporter -scrape_uri=http://clickhouse.service.consul:8123/
+docker run -d -p 9116:9116 docker.oaplatform.org/clickhouse-exporter -scrape_uri=http://clickhouse.service.consul:8123/
 ```
 ## Sample dashboard
 Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882

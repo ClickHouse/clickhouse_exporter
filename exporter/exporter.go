@@ -26,6 +26,7 @@ type Exporter struct {
 	asyncMetricsURI string
 	eventsURI       string
 	partsURI        string
+	mutationsURI    string
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
@@ -52,12 +53,17 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI := uri
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
-	
+
+	mutationsURI := uri
+	q.Set("query", "select database, table, countIf(is_done = 1) as is_done_1, countIf(is_done = 0) as is_done_0 from system.mutations group by database, table")
+	mutationsURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
 		partsURI:        partsURI.String(),
+		mutationsURI:    mutationsURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -172,6 +178,29 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newRowsMetric.Collect(ch)
 	}
 
+	mutations, err := e.parseMutationsResponse(e.mutationsURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.mutationsURI, err)
+	}
+
+	for _, mutation := range mutations {
+		newisdone1 := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_mutations",
+			Help:      "Number of mutations in the table",
+		}, []string{"database", "table", "is_done"}).WithLabelValues(mutation.database, mutation.table, "1")
+		newisdone1.Set(float64(mutation.is_done_1))
+		newisdone1.Collect(ch)
+
+		newisdone0 := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_mutations",
+			Help:      "Number of mutations in the table",
+		}, []string{"database", "table", "is_done"}).WithLabelValues(mutation.database, mutation.table, "0")
+		newisdone0.Set(float64(mutation.is_done_0))
+		newisdone0.Collect(ch)
+	}
+
 	return nil
 }
 
@@ -197,7 +226,7 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
-	
+
 	return data, nil
 }
 
@@ -241,6 +270,50 @@ type partsResult struct {
 	bytes    int
 	parts    int
 	rows     int
+}
+
+type mutationsResult struct {
+	database  string
+	table     string
+	is_done_1 int
+	is_done_0 int
+}
+
+func (e *Exporter) parseMutationsResponse(uri string) ([]mutationsResult, error) {
+	data, err := e.handleResponse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parsing results
+	lines := strings.Split(string(data), "\n")
+	var results []mutationsResult = make([]mutationsResult, 0)
+
+	for i, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) != 4 {
+			return nil, fmt.Errorf("parsePartsResponse: unexpected %d line: %s", i, line)
+		}
+		database := strings.TrimSpace(parts[0])
+		table := strings.TrimSpace(parts[1])
+
+		is_done_1, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nil, err
+		}
+
+		is_done_0, err := strconv.Atoi(strings.TrimSpace(parts[3]))
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, mutationsResult{database, table, is_done_1, is_done_0})
+	}
+
+	return results, nil
 }
 
 func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {

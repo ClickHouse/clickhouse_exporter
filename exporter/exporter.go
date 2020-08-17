@@ -254,7 +254,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 			return nil, fmt.Errorf("parseKeyValueResponse: unexpected %d line: %s", i, line)
 		}
 		k := strings.TrimSpace(parts[0])
-		v, err := strconv.ParseFloat(strings.TrimSpace(parts[1]))
+		v, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
 		if err != nil {
 			return nil, err
 		}

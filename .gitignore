@@ -2,3 +2,4 @@
 .build/
 clickhouse_exporter
 coverage.txt
+.go/

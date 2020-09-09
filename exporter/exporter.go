@@ -234,8 +234,8 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Name:      "table_size_primary_keys_size",
 			Help:      "Number of primary key bytes in the table",
 		}, []string{"database", "table"}).WithLabelValues(tableSize.database, tableSize.table)
-		newBytes_size.Set(float64(tableSize.primary_keys_size))
-		newBytes_size.Collect(ch)
+		newPrimary_keys_size.Set(float64(tableSize.primary_keys_size))
+		newPrimary_keys_size.Collect(ch)
 	}
 
 	return nil

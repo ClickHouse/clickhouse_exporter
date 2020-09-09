@@ -60,7 +60,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	mutationsURI.RawQuery = q.Encode()
 
 	tableSizeURI := uri
-	q.Set("query", "select database, table, sum(rows) as rows, max(modification_time) as latest_modification, sum(bytes) as bytes_size, any(engine) as engine, sum(primary_key_bytes_in_memory) as primary_keys_size from system.parts where active group by database, table order by bytes_size desc")
+	q.Set("query", "select database, table, sum(rows) as rows, sum(bytes) as bytes_size, sum(primary_key_bytes_in_memory) as primary_keys_size from system.parts where active group by database, table order by bytes_size desc")
 	tableSizeURI.RawQuery = q.Encode()
 
 	return &Exporter{
@@ -387,12 +387,12 @@ func (e *Exporter) parseTableSizeResponse(uri string) ([]tableSizeResult, error)
 			return nil, err
 		}
 
-		bytes_size, err := strconv.Atoi(strings.TrimSpace(parts[4]))
+		bytes_size, err := strconv.Atoi(strings.TrimSpace(parts[3]))
 		if err != nil {
 			return nil, err
 		}
 
-		primary_keys_size, err := strconv.Atoi(strings.TrimSpace(parts[6]))
+		primary_keys_size, err := strconv.Atoi(strings.TrimSpace(parts[4]))
 		if err != nil {
 			return nil, err
 		}

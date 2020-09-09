@@ -60,7 +60,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	mutationsURI.RawQuery = q.Encode()
 
 	tableSizeURI := uri
-	q.Set("query", "select database, table, sum(rows) as rows, sum(bytes) as bytes_size, sum(primary_key_bytes_in_memory) as primary_keys_size from system.parts where active group by database, table order by bytes_size desc")
+	q.Set("query", "select database, table, sum(rows) as rows, sum(bytes) as bytes_size, sum(primary_key_bytes_in_memory) as primary_keys_size from system.parts where active group by database, table")
 	tableSizeURI.RawQuery = q.Encode()
 
 	return &Exporter{
@@ -376,7 +376,7 @@ func (e *Exporter) parseTableSizeResponse(uri string) ([]tableSizeResult, error)
 		if len(parts) == 0 {
 			continue
 		}
-		if len(parts) != 4 {
+		if len(parts) != 5 {
 			return nil, fmt.Errorf("tableSizeResponse: unexpected %d line: %s", i, line)
 		}
 		database := strings.TrimSpace(parts[0])

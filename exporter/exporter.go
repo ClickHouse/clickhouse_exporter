@@ -27,6 +27,7 @@ type Exporter struct {
 	eventsURI       string
 	partsURI        string
 	mutationsURI    string
+	tableSizeURI    string
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
@@ -58,12 +59,17 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	q.Set("query", "select database, table, countIf(is_done = 1) as is_done_1, countIf(is_done = 0) as is_done_0 from system.mutations group by database, table")
 	mutationsURI.RawQuery = q.Encode()
 
+	tableSizeURI := uri
+	q.Set("query", "select database, table, sum(rows) as rows, max(modification_time) as latest_modification, sum(bytes) as bytes_size, any(engine) as engine, sum(primary_key_bytes_in_memory) as primary_keys_size from system.parts where active group by database, table order by bytes_size desc")
+	tableSizeURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
 		partsURI:        partsURI.String(),
 		mutationsURI:    mutationsURI.String(),
+		tableSizeURI:    tableSizeURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -201,6 +207,37 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newisdone0.Collect(ch)
 	}
 
+	tableSizes, err := e.parseTableSizeResponse(e.tableSizeURI)
+	if err != nil {
+		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.tableSizeURI, err)
+	}
+
+	for _, tableSize := range tableSizes {
+		newRows := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_size_rows",
+			Help:      "Number of rows in the table",
+		}, []string{"database", "table"}).WithLabelValues(tableSize.database, tableSize.table)
+		newRows.Set(float64(tableSize.rows))
+		newRows.Collect(ch)
+
+		newBytes_size := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_size_bytes_size",
+			Help:      "Number of bytes in the table",
+		}, []string{"database", "table"}).WithLabelValues(tableSize.database, tableSize.table)
+		newBytes_size.Set(float64(tableSize.bytes_size))
+		newBytes_size.Collect(ch)
+
+		newPrimary_keys_size := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "table_size_primary_keys_size",
+			Help:      "Number of primary key bytes in the table",
+		}, []string{"database", "table"}).WithLabelValues(tableSize.database, tableSize.table)
+		newBytes_size.Set(float64(tableSize.primary_keys_size))
+		newBytes_size.Collect(ch)
+	}
+
 	return nil
 }
 
@@ -279,6 +316,14 @@ type mutationsResult struct {
 	is_done_0 int
 }
 
+type tableSizeResult struct {
+	database          string
+	table             string
+	rows              int
+	bytes_size        int
+	primary_keys_size int
+}
+
 func (e *Exporter) parseMutationsResponse(uri string) ([]mutationsResult, error) {
 	data, err := e.handleResponse(uri)
 	if err != nil {
@@ -295,7 +340,7 @@ func (e *Exporter) parseMutationsResponse(uri string) ([]mutationsResult, error)
 			continue
 		}
 		if len(parts) != 4 {
-			return nil, fmt.Errorf("parsePartsResponse: unexpected %d line: %s", i, line)
+			return nil, fmt.Errorf("parseMutationsResponse: unexpected %d line: %s", i, line)
 		}
 		database := strings.TrimSpace(parts[0])
 		table := strings.TrimSpace(parts[1])
@@ -311,6 +356,48 @@ func (e *Exporter) parseMutationsResponse(uri string) ([]mutationsResult, error)
 		}
 
 		results = append(results, mutationsResult{database, table, is_done_1, is_done_0})
+	}
+
+	return results, nil
+}
+
+func (e *Exporter) parseTableSizeResponse(uri string) ([]tableSizeResult, error) {
+	data, err := e.handleResponse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parsing results
+	lines := strings.Split(string(data), "\n")
+	var results []tableSizeResult = make([]tableSizeResult, 0)
+
+	for i, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) != 4 {
+			return nil, fmt.Errorf("tableSizeResponse: unexpected %d line: %s", i, line)
+		}
+		database := strings.TrimSpace(parts[0])
+		table := strings.TrimSpace(parts[1])
+
+		rows, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nil, err
+		}
+
+		bytes_size, err := strconv.Atoi(strings.TrimSpace(parts[4]))
+		if err != nil {
+			return nil, err
+		}
+
+		primary_keys_size, err := strconv.Atoi(strings.TrimSpace(parts[6]))
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, tableSizeResult{database, table, rows, bytes_size, primary_keys_size})
 	}
 
 	return results, nil

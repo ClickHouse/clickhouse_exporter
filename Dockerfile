@@ -6,7 +6,7 @@ COPY . /go/src/github.com/Percona-Lab/clickhouse_exporter
 
 WORKDIR /go/src/github.com/Percona-Lab/clickhouse_exporter
 
-RUN make init && make
+RUN make init && make -j4 > /dev/null
 
 FROM frolvlad/alpine-glibc:alpine-3.8
 

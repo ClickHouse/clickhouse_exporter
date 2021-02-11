@@ -32,3 +32,6 @@ docker run -d -p 9116:9116 Percona-Lab/clickhouse-exporter -scrape_uri=http://cl
 ```
 ## Sample dashboard
 Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882
+
+## Docker image:
+docker pull yandex/clickhouse-exporter:latest

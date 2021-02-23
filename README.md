@@ -31,4 +31,6 @@ CLICKHOUSE_PASSWORD
 docker run -d -p 9116:9116 Percona-Lab/clickhouse-exporter -scrape_uri=http://clickhouse.service.consul:8123/
 ```
 ## Sample dashboard
-Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882
+Grafana dashboards could be a start for inspiration:
+* https://grafana.com/grafana/dashboards/13500
+* https://grafana.net/dashboards/882

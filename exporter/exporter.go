@@ -306,11 +306,25 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 // Collect fetches the stats from configured clickhouse location and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+	upValue := 1
+
 	if err := e.collect(ch); err != nil {
 		log.Printf("Error scraping clickhouse: %s", err)
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
+
+		upValue = 0
 	}
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "up"),
+			"Was the last query of ClickHouse successful.",
+			nil, nil,
+		),
+		prometheus.GaugeValue, float64(upValue),
+	)
+
 }
 
 func metricName(in string) string {

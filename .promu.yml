@@ -3,7 +3,7 @@ go:
     version: 1.10.3
     cgo: false
 repository:
-    path: github.com/Percona-Lab/clickhouse_exporter
+    path: github.com/ClickHouse/clickhouse_exporter
 build:
     prefix: .
     binaries:

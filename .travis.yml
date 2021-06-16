@@ -5,11 +5,10 @@ services:
   - docker
 
 go:
-  - 1.15.x
-  - 1.14.x
+  - 1.16.x
   - tip
 
-go_import_path: github.com/Percona-Lab/clickhouse_exporter
+go_import_path: github.com/ClickHouse/clickhouse_exporter
 
 # skip non-trunk PMM-XXXX branch builds, but still build pull requests
 branches:

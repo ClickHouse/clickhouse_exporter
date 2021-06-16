@@ -1,4 +1,4 @@
-package exporter // import "github.com/Percona-Lab/clickhouse_exporter/exporter"
+package exporter
 
 import (
 	"crypto/tls"

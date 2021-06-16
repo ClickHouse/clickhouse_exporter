@@ -1,10 +1,10 @@
-FROM golang:1.15 AS BUILD
+FROM golang:1.16 AS BUILD
 
 LABEL maintainer="Roman Tkalenko"
 
-COPY . /go/src/github.com/Percona-Lab/clickhouse_exporter
+COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
-WORKDIR /go/src/github.com/Percona-Lab/clickhouse_exporter
+WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
 RUN make init && make
 

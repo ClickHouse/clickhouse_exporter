@@ -1,0 +1,49 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+
+  push:
+    branches:
+      - master
+      - dev
+      - github_actions
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v2
+
+      - name: Setup golang
+        id: setup-go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+
+      - name: Cache golang
+        id: cache-golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ matrix.golang-version }}-golang-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.golang-version }}-golang-
+
+      - name: Install golang dependencies
+        run: go mod download -x
+        if: |
+          steps.cache-golang.outputs.cache-hit != 'true'
+
+      - run: make init
+      - run: make
+
+      - name: Docker build
+        run: docker build .

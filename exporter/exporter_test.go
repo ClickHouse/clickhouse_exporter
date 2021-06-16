@@ -44,12 +44,12 @@ func TestScrape(t *testing.T) {
 func TestParseNumber(t *testing.T) {
 	type testCase struct {
 		in  string
-		out int
+		out float64
 	}
 
 	testCases := []testCase{
 		{in: "1", out: 1},
-		{in: "1.1", out: 1},
+		{in: "1.1", out: 1.1},
 	}
 
 	for _, tc := range testCases {
@@ -58,7 +58,7 @@ func TestParseNumber(t *testing.T) {
 			t.Fatalf("unexpected error: %s", err)
 		}
 		if out != tc.out {
-			t.Fatalf("wrong output: %d, expected %d", out, tc.out)
+			t.Fatalf("wrong output: %f, expected %f", out, tc.out)
 		}
 	}
 }

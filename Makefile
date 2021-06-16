@@ -8,5 +8,5 @@ build:
 	go build
 
 test:
-	go test -v -race
+	go test -v -race ./...
 	gocoverutil -coverprofile=coverage.txt test -v

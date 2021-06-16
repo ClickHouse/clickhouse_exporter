@@ -41,20 +41,8 @@ jobs:
         if: |
           steps.cache-golang.outputs.cache-hit != 'true'
 
-      - name: Setup docker-compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y make python3-pip
-          sudo python3 -m pip install -U pip
-          sudo pip3 install --prefer-binary -U setuptools
-          sudo pip3 install --prefer-binary -U docker-compose
-
-      - name: Extract DOCKER_TAG version
-        id: docker_tag
-        run: |
-          DOCKER_TAG=${GITHUB_REF##*/}
-          export DOCKER_TAG=${DOCKER_TAG##*\\}
-          echo "::set-output name=docker_tag::${DOCKER_TAG:-dev}"
-
       - run: make init
       - run: make
+
+      - name: Docker build
+        run: docker build .

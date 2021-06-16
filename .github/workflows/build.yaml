@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+
+  push:
+    branches:
+      - master
+      - dev
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v2
+
+      - name: Setup golang
+        id: setup-go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+
+      - name: Cache golang
+        id: cache-golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ matrix.golang-version }}-golang-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.golang-version }}-golang-
+
+      - name: Install golang dependencies
+        run: go mod download -x
+        if: |
+          steps.cache-golang.outputs.cache-hit != 'true'
+
+      - name: Setup docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y make python3-pip
+          sudo python3 -m pip install -U pip
+          sudo pip3 install --prefer-binary -U setuptools
+          sudo pip3 install --prefer-binary -U docker-compose
+
+      - name: Extract DOCKER_TAG version
+        id: docker_tag
+        run: |
+          DOCKER_TAG=${GITHUB_REF##*/}
+          export DOCKER_TAG=${DOCKER_TAG##*\\}
+          echo "::set-output name=docker_tag::${DOCKER_TAG:-dev}"
+
+      - run: make init
+      - run: make

@@ -1,4 +1,4 @@
-package main // import "github.com/Percona-Lab/clickhouse_exporter"
+package main
 
 import (
 	"flag"
@@ -16,6 +16,7 @@ var (
 	listeningAddress    = flag.String("telemetry.address", ":9116", "Address on which to expose metrics.")
 	metricsEndpoint     = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
 	clickhouseScrapeURI = flag.String("scrape_uri", "http://localhost:8123/", "URI to clickhouse http endpoint")
+	clickhouseOnly      = flag.Bool("clickhouseOnly", false, "Expose only Clickhouse metrics, not metrics from the exporter itself")
 	insecure            = flag.Bool("insecure", true, "Ignore server certificate if using https")
 	user                = os.Getenv("CLICKHOUSE_USER")
 	password            = os.Getenv("CLICKHOUSE_PASSWORD")
@@ -28,11 +29,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	registerer := prometheus.DefaultRegisterer
+	gatherer := prometheus.DefaultGatherer
+	if *clickhouseOnly {
+		reg := prometheus.NewRegistry()
+		registerer = reg
+		gatherer = reg
+	}
+
 	e := exporter.NewExporter(*uri, *insecure, user, password)
-	prometheus.MustRegister(e)
+	registerer.MustRegister(e)
 
 	log.Printf("Starting Server: %s", *listeningAddress)
-	http.Handle(*metricsEndpoint, promhttp.Handler())
+	http.Handle(*metricsEndpoint, promhttp.HandlerFor(gatherer, promhttp.HandlerOpts{}))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 			<head><title>Clickhouse Exporter</title></head>

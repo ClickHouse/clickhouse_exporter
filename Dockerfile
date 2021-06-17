@@ -8,7 +8,7 @@ WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
 RUN make init && make
 
-FROM frolvlad/alpine-glibc:alpine-3.8
+FROM frolvlad/alpine-glibc:alpine-3.13
 
 COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
 

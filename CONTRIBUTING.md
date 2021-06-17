@@ -9,9 +9,3 @@ docker-compose up
 make init
 make
 ```
-
-
-## Vendoring
-
-We use [dep](https://github.com/golang/dep) to vendor dependencies. Please use released version, i.e. do not `go get`
-from `master` branch.

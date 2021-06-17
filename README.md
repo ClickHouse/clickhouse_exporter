@@ -22,10 +22,15 @@ CLICKHOUSE_USER
 CLICKHOUSE_PASSWORD
 ```
 
+## Build Docker image
+```
+docker build . -t clickhouse-exporter
+```
+
 ## Using Docker
 
 ```
-docker run -d -p 9116:9116 ClickHouse/clickhouse-exporter -scrape_uri=http://clickhouse.service.consul:8123/
+docker run -d -p 9116:9116 clickhouse-exporter -scrape_uri=http://clickhouse-url:8123/
 ```
 ## Sample dashboard
 Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882

@@ -38,11 +38,11 @@ type Exporter struct {
 func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	q := uri.Query()
 	metricsURI := uri
-	q.Set("query", "select metric, toInt64(value) from system.metrics")
+	q.Set("query", "select metric, value from system.metrics")
 	metricsURI.RawQuery = q.Encode()
 
 	asyncMetricsURI := uri
-	q.Set("query", "select replaceRegexpOne(toString(metric), '-', '_') AS metric, toInt64(value) from system.asynchronous_metrics")
+	q.Set("query", "select replaceRegexpOne(toString(metric), '-', '_') AS metric, value from system.asynchronous_metrics")
 	asyncMetricsURI.RawQuery = q.Encode()
 
 	eventsURI := uri

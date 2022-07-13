@@ -6,8 +6,7 @@ COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
 WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
-ARG TARGETOS TARGETARCH
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make init && make
+RUN make init && make
 
 
 FROM frolvlad/alpine-glibc:alpine-3.13

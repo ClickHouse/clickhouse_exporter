@@ -1,16 +1,33 @@
-dist: trusty
-sudo: required
+dist: bionic
 language: go
-
-go:
-  - 1.8.x
-  - 1.9.x
-  - master
-
-go_import_path: github.com/f1yegor/clickhouse_exporter
 
 services:
   - docker
+
+go:
+  - 1.16.x
+  - tip
+
+go_import_path: github.com/ClickHouse/clickhouse_exporter
+
+# skip non-trunk PMM-XXXX branch builds, but still build pull requests
+branches:
+  except:
+    - /^PMM\-\d{4}/
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - go: tip
+
+cache:
+  directories:
+    - /home/travis/.cache/go-build
+    # - /home/travis/gopath/pkg
+
+before_cache:
+  - go clean -testcache
+  # - go clean -cache
 
 before_script:
   - docker --version

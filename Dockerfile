@@ -1,21 +1,19 @@
-FROM golang:1.15-buster AS BUILD
+FROM golang:1.16 AS BUILD
 
-LABEL maintainer="Igor Petrenko"
+LABEL maintainer="Roman Tkalenko"
 
-COPY . /go/src/github.com/f1yegor/clickhouse_exporter
+COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
-WORKDIR /go/src/github.com/f1yegor/clickhouse_exporter
+WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
 RUN make init && make
 
-FROM frolvlad/alpine-glibc:alpine-3.16
+
+FROM frolvlad/alpine-glibc:alpine-3.13
 
 COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
-
-RUN apk update && apk add ca-certificates curl bash && rm -rf /var/cache/apk/*
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
 ENTRYPOINT ["/usr/local/bin/clickhouse_exporter"]
-
 CMD ["-scrape_uri=http://localhost:8123"]
-
 EXPOSE 9116

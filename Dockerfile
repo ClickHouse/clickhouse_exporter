@@ -1,4 +1,4 @@
-FROM golang:1.11 AS BUILD
+FROM golang:1.18 AS BUILD
 
 LABEL maintainer="Igor Petrenko"
 
@@ -8,7 +8,7 @@ WORKDIR /go/src/github.com/f1yegor/clickhouse_exporter
 
 RUN make init && make
 
-FROM frolvlad/alpine-glibc:alpine-3.8
+FROM frolvlad/alpine-glibc:alpine-3.16
 
 COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
 

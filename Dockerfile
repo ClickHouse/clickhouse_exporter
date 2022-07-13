@@ -1,4 +1,4 @@
-FROM golang:1.16 AS BUILD
+FROM --platform=$BUILDPLATFORM golang:1.16 AS BUILD
 
 LABEL maintainer="Roman Tkalenko"
 
@@ -6,7 +6,8 @@ COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
 WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
-RUN make init && make
+ARG TARGETOS TARGETARCH
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make init && make
 
 
 FROM frolvlad/alpine-glibc:alpine-3.13

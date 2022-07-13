@@ -6,10 +6,12 @@ COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
 WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
-RUN make init && make
+ARG TARGETARCH
+
+RUN GOOS=linux GOARCH=$TARGETARCH make init && make
 
 
-FROM frolvlad/alpine-glibc:alpine-3.13
+FROM pingcap/alpine-glibc:alpine-3.14
 
 COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*

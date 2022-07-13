@@ -1,4 +1,4 @@
-FROM golang:1.18 AS BUILD
+FROM golang:1.12 AS BUILD
 
 LABEL maintainer="Igor Petrenko"
 

@@ -8,7 +8,7 @@ WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
 ARG TARGETARCH
 
-RUN GOOS=linux GOARCH=$TARGETARCH make init && make
+RUN GOOS=linux GOARCH=$TARGETARCH make
 
 
 FROM pingcap/alpine-glibc:alpine-3.14

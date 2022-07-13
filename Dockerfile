@@ -1,12 +1,10 @@
-FROM golang:1.14 AS BUILD
+FROM golang:1.15-buster AS BUILD
 
 LABEL maintainer="Igor Petrenko"
 
 COPY . /go/src/github.com/f1yegor/clickhouse_exporter
 
 WORKDIR /go/src/github.com/f1yegor/clickhouse_exporter
-
-RUN apk update && apk add ca-certificates curl bash && rm -rf /var/cache/apk/*
 
 RUN make init && make
 

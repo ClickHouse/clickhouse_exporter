@@ -3,7 +3,7 @@ package exporter
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,6 +26,7 @@ type Exporter struct {
 	asyncMetricsURI string
 	eventsURI       string
 	partsURI        string
+	disksMetricURI  string
 	client          *http.Client
 
 	scrapeFailures prometheus.Counter
@@ -53,11 +54,19 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	q.Set("query", "select database, table, sum(bytes) as bytes, count() as parts, sum(rows) as rows from system.parts where active = 1 group by database, table")
 	partsURI.RawQuery = q.Encode()
 
+	disksMetricURI := uri
+	q.Set("query", `select (select 'free_space_in_bytes') as metric, toString(free_space) as value from system.disks
+                    UNION ALL select (select 'total_space_in_bytes') as metric, toString(total_space) as value from system.disks
+                    UNION ALL select (select 'free_space_in_gigabytes') as metric, toString(free_space /1024/1024/1024) as value from system.disks
+                    UNION ALL select (select 'total_space_in_gigabytes') as metric, toString(total_space /1024/1024/1024) as value from system.disks`)
+	disksMetricURI.RawQuery = q.Encode()
+
 	return &Exporter{
 		metricsURI:      metricsURI.String(),
 		asyncMetricsURI: asyncMetricsURI.String(),
 		eventsURI:       eventsURI.String(),
 		partsURI:        partsURI.String(),
+		disksMetricURI:  disksMetricURI.String(),
 		scrapeFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "exporter_scrape_failures_total",
@@ -99,7 +108,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 	metrics, err := e.parseKeyValueResponse(e.metricsURI)
 	if err != nil {
-		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.metricsURI, err)
+		return fmt.Errorf("error scraping clickhouse url %v: %v", e.metricsURI, err)
 	}
 
 	for _, m := range metrics {
@@ -114,7 +123,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 
 	asyncMetrics, err := e.parseKeyValueResponse(e.asyncMetricsURI)
 	if err != nil {
-		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.asyncMetricsURI, err)
+		return fmt.Errorf("error scraping clickhouse url %v: %v", e.asyncMetricsURI, err)
 	}
 
 	for _, am := range asyncMetrics {
@@ -129,7 +138,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 
 	events, err := e.parseKeyValueResponse(e.eventsURI)
 	if err != nil {
-		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.eventsURI, err)
+		return fmt.Errorf("error scraping clickhouse url %v: %v", e.eventsURI, err)
 	}
 
 	for _, ev := range events {
@@ -143,7 +152,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 
 	parts, err := e.parsePartsResponse(e.partsURI)
 	if err != nil {
-		return fmt.Errorf("Error scraping clickhouse url %v: %v", e.partsURI, err)
+		return fmt.Errorf("error scraping clickhouse url %v: %v", e.partsURI, err)
 	}
 
 	for _, part := range parts {
@@ -172,6 +181,20 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newRowsMetric.Collect(ch)
 	}
 
+	disksMetrics, err := e.parseKeyValueResponse(e.disksMetricURI)
+	if err != nil {
+		return fmt.Errorf("error scraping clickhouse url %v: %v", e.disksMetricURI, err)
+	}
+
+	for _, dm := range disksMetrics {
+		newMetric, _ := prometheus.NewConstMetric(
+			prometheus.NewDesc(
+				namespace+"_"+metricName(dm.key),
+				"Disks "+dm.key+" capacity", []string{}, nil),
+			prometheus.CounterValue, float64(dm.value))
+		ch <- newMetric
+	}
+
 	return nil
 }
 
@@ -186,16 +209,16 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 	}
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error scraping clickhouse: %v", err)
+		return nil, fmt.Errorf("error scraping clickhouse: %v", err)
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		if err != nil {
 			data = []byte(err.Error())
 		}
-		return nil, fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
+		return nil, fmt.Errorf("status %s (%d): %s", resp.Status, resp.StatusCode, data)
 	}
 
 	return data, nil

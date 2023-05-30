@@ -33,4 +33,4 @@ docker build . -t clickhouse-exporter
 docker run -d -p 9116:9116 clickhouse-exporter -scrape_uri=http://clickhouse-url:8123/
 ```
 ## Sample dashboard
-Grafana dashboard could be a start for inspiration https://grafana.net/dashboards/882
+Grafana dashboard could be a start for inspiration https://grafana.com/grafana/dashboards/882-clickhouse

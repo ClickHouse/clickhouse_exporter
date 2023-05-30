@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
 )
 
 const (

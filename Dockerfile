@@ -1,4 +1,4 @@
-FROM golang:1.16 AS BUILD
+FROM golang:1.20 AS BUILDER
 
 LABEL maintainer="Roman Tkalenko"
 
@@ -6,12 +6,12 @@ COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 
 WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
 
-RUN make init && make
+RUN make init
+RUN make all
 
+FROM alpine:latest
 
-FROM frolvlad/alpine-glibc:alpine-3.13
-
-COPY --from=BUILD /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
+COPY --from=BUILDER /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
 ENTRYPOINT ["/usr/local/bin/clickhouse_exporter"]

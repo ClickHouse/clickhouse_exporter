@@ -24,7 +24,7 @@ jobs:
         id: setup-go
         uses: actions/setup-go@v2
         with:
-          go-version: '^1.16'
+          go-version: '^1.20'
 
       - name: Cache golang
         id: cache-golang
@@ -38,7 +38,9 @@ jobs:
             ${{ runner.os }}-${{ matrix.golang-version }}-golang-
 
       - name: Install golang dependencies
-        run: go mod download -x
+        run: |
+          go mod download -x
+          go install github.com/AlekSi/gocoverutil@latest
         if: |
           steps.cache-golang.outputs.cache-hit != 'true'
 

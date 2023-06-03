@@ -1,7 +1,10 @@
-# Clickhouse Exporter for Prometheus
+# Clickhouse Exporter for Prometheus (old clickhouse-server versions)
 
-This is a simple server that periodically scrapes [ClickHouse](https://clickhouse.tech/) stats and exports them via HTTP for [Prometheus](https://prometheus.io/)
+This is a simple server that periodically scrapes [ClickHouse](https://clickhouse.com/) stats and exports them via HTTP for [Prometheus](https://prometheus.io/)
 consumption.
+
+Exporter could used only for old ClickHouse versions, modern versions have embedded prometheus endpoint.
+Look details https://clickhouse.com/docs/en/operations/server-configuration-parameters/settings#server_configuration_parameters-prometheus
 
 To run it:
 

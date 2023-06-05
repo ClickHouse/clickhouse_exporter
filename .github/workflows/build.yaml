@@ -9,8 +9,6 @@ on:
   push:
     branches:
       - master
-      - dev
-      - github_actions
 
 jobs:
   build:
@@ -24,7 +22,7 @@ jobs:
         id: setup-go
         uses: actions/setup-go@v2
         with:
-          go-version: '^1.16'
+          go-version: '^1.20'
 
       - name: Cache golang
         id: cache-golang
@@ -46,4 +44,10 @@ jobs:
       - run: make
 
       - name: Docker build
-        run: docker build .
+        run: docker build . --tag clickhouse-exporter:latest
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker push
+        run: docker push clickhouse-exporter:latest

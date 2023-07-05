@@ -55,10 +55,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	partsURI.RawQuery = q.Encode()
 
 	disksMetricURI := uri
-	q.Set("query", `select (select 'free_space_in_bytes') as metric, toString(free_space) as value from system.disks
-                    UNION ALL select (select 'total_space_in_bytes') as metric, toString(total_space) as value from system.disks
-                    UNION ALL select (select 'free_space_in_gigabytes') as metric, toString(free_space /1024/1024/1024) as value from system.disks
-                    UNION ALL select (select 'total_space_in_gigabytes') as metric, toString(total_space /1024/1024/1024) as value from system.disks`)
+	q.Set("query", `select name, sum(free_space) as free_space_in_bytes, sum(total_space) as total_space_in_bytes from system.disks group by name`)
 	disksMetricURI.RawQuery = q.Encode()
 
 	return &Exporter{
@@ -181,18 +178,27 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 		newRowsMetric.Collect(ch)
 	}
 
-	disksMetrics, err := e.parseKeyValueResponse(e.disksMetricURI)
+	disksMetrics, err := e.parseDiskResponse(e.disksMetricURI)
 	if err != nil {
 		return fmt.Errorf("error scraping clickhouse url %v: %v", e.disksMetricURI, err)
 	}
 
 	for _, dm := range disksMetrics {
-		newMetric, _ := prometheus.NewConstMetric(
-			prometheus.NewDesc(
-				namespace+"_"+metricName(dm.key),
-				"Disks "+dm.key+" capacity", []string{}, nil),
-			prometheus.CounterValue, float64(dm.value))
-		ch <- newMetric
+		newFreeSpaceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "free_space_in_bytes",
+			Help:      "Disks free_space_in_bytes capacity",
+		}, []string{"disk"}).WithLabelValues(dm.disk)
+		newFreeSpaceMetric.Set(dm.freeSpace)
+		newFreeSpaceMetric.Collect(ch)
+
+		newTotalSpaceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "total_space_in_bytes",
+			Help:      "Disks total_space_in_bytes capacity",
+		}, []string{"disk"}).WithLabelValues(dm.disk)
+		newTotalSpaceMetric.Set(dm.totalSpace)
+		newTotalSpaceMetric.Collect(ch)
 	}
 
 	return nil
@@ -262,6 +268,48 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 			return nil, err
 		}
 		results = append(results, lineResult{k, v})
+
+	}
+	return results, nil
+}
+
+type diskResult struct {
+	disk       string
+	freeSpace  float64
+	totalSpace float64
+}
+
+func (e *Exporter) parseDiskResponse(uri string) ([]diskResult, error) {
+	data, err := e.handleResponse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parsing results
+	lines := strings.Split(string(data), "\n")
+	var results []diskResult = make([]diskResult, 0)
+
+	for i, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("parseDiskResponse: unexpected %d line: %s", i, line)
+		}
+		disk := strings.TrimSpace(parts[0])
+
+		freeSpace, err := parseNumber(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return nil, err
+		}
+
+		totalSpace, err := parseNumber(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, diskResult{disk, freeSpace, totalSpace})
 
 	}
 	return results, nil

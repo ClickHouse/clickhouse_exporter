@@ -16,4 +16,5 @@ RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
 ENTRYPOINT ["/usr/local/bin/clickhouse_exporter"]
 CMD ["-scrape_uri=http://localhost:8123"]
+USER   nobody
 EXPOSE 9116

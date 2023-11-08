@@ -5,7 +5,7 @@ init:
 
 build:
 	go install -v
-	go build
+	go build -ldflags "-linkmode=external -extldflags '-static' -extldflags '-static'" .
 
 test:
 	go test -v -race

@@ -48,4 +48,6 @@ jobs:
       - run: make
 
       - name: Docker build
-        run: docker build .
+        run: |
+          docker build -t clickhouse/clickhouse_exporter:latest .
+          docker run --rm clickhouse/clickhouse_exporter:latest --help

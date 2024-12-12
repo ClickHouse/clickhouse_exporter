@@ -12,7 +12,7 @@ import (
 	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -217,7 +217,11 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error scraping clickhouse: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error().Err(err).Msg("can't close resp.Body")
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
@@ -252,7 +256,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 
 	// Parsing results
 	lines := strings.Split(string(data), "\n")
-	var results []lineResult = make([]lineResult, 0)
+	var results = make([]lineResult, 0)
 
 	for i, line := range lines {
 		parts := strings.Fields(line)
@@ -287,7 +291,7 @@ func (e *Exporter) parseDiskResponse(uri string) ([]diskResult, error) {
 
 	// Parsing results
 	lines := strings.Split(string(data), "\n")
-	var results []diskResult = make([]diskResult, 0)
+	var results = make([]diskResult, 0)
 
 	for i, line := range lines {
 		parts := strings.Fields(line)
@@ -331,7 +335,7 @@ func (e *Exporter) parsePartsResponse(uri string) ([]partsResult, error) {
 
 	// Parsing results
 	lines := strings.Split(string(data), "\n")
-	var results []partsResult = make([]partsResult, 0)
+	var results = make([]partsResult, 0)
 
 	for i, line := range lines {
 		parts := strings.Fields(line)
@@ -371,7 +375,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	upValue := 1
 
 	if err := e.collect(ch); err != nil {
-		log.Printf("Error scraping clickhouse: %s", err)
+		log.Info().Msgf("Error scraping clickhouse: %s", err)
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
 

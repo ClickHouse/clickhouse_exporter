@@ -9,7 +9,7 @@ import (
 	"github.com/ClickHouse/clickhouse_exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/log"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -27,7 +27,7 @@ func main() {
 
 	uri, err := url.Parse(*clickhouseScrapeURI)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Send()
 	}
 	log.Printf("Scraping %s", *clickhouseScrapeURI)
 
@@ -53,5 +53,5 @@ func main() {
 			</html>`))
 	})
 
-	log.Fatal(http.ListenAndServe(*listeningAddress, nil))
+	log.Fatal().Err(http.ListenAndServe(*listeningAddress, nil)).Send()
 }

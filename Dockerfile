@@ -1,6 +1,6 @@
-FROM golang:1.21 AS BUILDER
+FROM golang:1.23 AS BUILDER
 
-LABEL maintainer="Roman Tkalenko"
+LABEL maintainer="Eugene Klimov <bloodjazman@gmail.com>"
 
 COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
 

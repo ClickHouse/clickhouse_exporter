@@ -1,9 +1,14 @@
----
-version: '3'
 services:
-  clickhouse:
-    image: clickhouse/clickhouse-server
+  clickhouse-exporter:
+    image: clickhouse-exporter:0.1.1
     ports:
-      - 127.0.0.1:8123:8123
-      - 127.0.0.1:9000:9000
-      - 127.0.0.1:9009:9009
+      - "9116:9116"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_HTTP_PROXY: ${BUILD_HTTP_PROXY}
+        BUILD_HTTPS_PROXY: ${BUILD_HTTPS_PROXY}
+        PORT: ${PORT}
+    env_file:
+      - .env

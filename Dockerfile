@@ -1,20 +1,36 @@
-FROM golang:1.23 AS BUILDER
+FROM golang:1.23 AS builder
 
-LABEL maintainer="Eugene Klimov <bloodjazman@gmail.com>"
+WORKDIR /app
 
-COPY . /go/src/github.com/ClickHouse/clickhouse_exporter
+COPY . .
 
-WORKDIR /go/src/github.com/ClickHouse/clickhouse_exporter
+ARG BUILD_HTTP_PROXY
+ARG BUILD_HTTPS_PROXY
+ENV HTTP_PROXY=${BUILD_HTTP_PROXY}
+ENV HTTPS_PROXY=${BUILD_HTTPS_PROXY}
 
-RUN make init
-RUN make all
+RUN go mod download
 
-FROM alpine:latest
+RUN CGO_ENABLED=0 GOOS=linux go build -o clickhouse_exporter ./cmd/clickhouse_exporter
 
-COPY --from=BUILDER /go/bin/clickhouse_exporter /usr/local/bin/clickhouse_exporter
-RUN apk update && apk add ca-certificates libc6-compat && rm -rf /var/cache/apk/*
 
-ENTRYPOINT ["/usr/local/bin/clickhouse_exporter"]
-CMD ["-scrape_uri=http://localhost:8123"]
-USER   nobody
-EXPOSE 9116
+FROM alpine:3.21.3
+
+ARG BUILD_HTTP_PROXY
+ARG BUILD_HTTPS_PROXY
+ENV HTTP_PROXY=${BUILD_HTTP_PROXY}
+ENV HTTPS_PROXY=${BUILD_HTTPS_PROXY}
+
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /app/clickhouse_exporter /opt/clickhouse_exporter/runner
+
+COPY ./conf /opt/clickhouse_exporter/conf
+ENV QUERY_FILTERS_PATH=/opt/clickhouse_exporter/conf/query-filters.yaml
+
+USER nobody
+
+ARG PORT
+EXPOSE ${PORT}
+
+ENTRYPOINT ["/opt/clickhouse_exporter/runner"]

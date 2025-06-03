@@ -1,4 +1,4 @@
-# Clickhouse Exporter for Prometheus (old clickhouse-server versions)
+# Clickhouse Exporter for Prometheus
 
 This is a simple server that periodically scrapes [ClickHouse](https://clickhouse.com/) stats and exports them via HTTP for [Prometheus](https://prometheus.io/)
 consumption.
@@ -21,19 +21,39 @@ Credentials(if not default):
 
 via environment variables
 ```
+CLICKHOUSE_URI
 CLICKHOUSE_USER
 CLICKHOUSE_PASSWORD
 ```
 
 ## Build Docker image
 ```
-docker build . -t clickhouse-exporter
+docker build . -t clickhouse-exporter \
+    --build-arg BUILD_HTTP_PROXY=http://proxy-host:port \
+    --build-arg BUILD_HTTPS_PROXY=http://proxy-host:port
 ```
 
 ## Using Docker
 
 ```
-docker run -d -p 9116:9116 clickhouse-exporter -scrape_uri=http://clickhouse-url:8123/
+docker run -d -p 9116:9116 clickhouse-exporter
 ```
 ## Sample dashboard
 Grafana dashboard could be a start for inspiration https://grafana.com/grafana/dashboards/882-clickhouse
+
+## Using with Prometheus
+just add it like this to your prometheus.yaml
+```yaml
+global:
+  scrape_interval:     1s
+  evaluation_interval: 1s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['127.0.0.1:9090']
+
+  - job_name: clickhouse-exporter
+    static_configs:
+      - targets: ['127.0.0.1:9116']
+```

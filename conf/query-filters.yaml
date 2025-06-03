@@ -1,0 +1,32 @@
+# Each exporter has a unique query which runs on clickhouse to get metrics
+# These are default filters for queries
+# Feel free to change them as you want but be carefull about time-series data cardinality
+# Warning: Prometheus can not handle time-series data with high cardinalityt
+
+query_exporter:
+  filters: 
+    - "NOT has(databases, 'system')"
+    - "NOT table like '%%temporary%%'"
+    - "NOT user like 'default'"
+
+async_exporter:
+  filters:
+
+basic_exporter:
+  filters:
+
+disk_exporter:
+  filters:
+
+event_exporter:
+  filters:
+
+parts_exporter:
+  filters:
+    - "active = 1"
+
+table_exporter:
+  filters:
+    - "NOT database like 'system'"
+    - "NOT database ilike 'information_schema'"
+  

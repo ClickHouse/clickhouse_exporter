@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-	log.Printf("Scraping %s", *clickhouseScrapeURI)
+	log.Printf("Scraping %s", uri.Hostname())
 
 	registerer := prometheus.DefaultRegisterer
 	gatherer := prometheus.DefaultGatherer
